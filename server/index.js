@@ -84,21 +84,27 @@ io.on('connection', (socket) => {
 
     //user deletion
     socket.on('disconnect', s=>{
-        console.log('a user disconnected')
-        users.delete(socket.userID);
-
-
-        let currentRoom=find_room_by_id(socket.room);
-        currentRoom.users.delete(socket.userID);
-        if(currentRoom.users.size == 0){
-            rooms.splice(currentRoom.roomID-1,1);
-            
+        try{
+            console.log('a user disconnected')
+            users.delete(socket.userID);
+    
+    
+            let currentRoom=find_room_by_id(socket.room);
+            currentRoom.users.delete(socket.userID);
+            if(currentRoom.users.size == 0){
+                rooms.splice(currentRoom.roomID-1,1);
+                
+            }
+            else if(currentRoom.users.size<currentRoom.limit){
+                currentRoom.open=true;
+            }
+            update_open_rooms_for_users()
+            io.to(currentRoom.name).emit('updateUsers',[...currentRoom.users])
         }
-        else if(currentRoom.users.size<currentRoom.limit){
-            currentRoom.open=true;
+        catch(e){
+
+            console.log('error : ',e);
         }
-        update_open_rooms_for_users()
-        io.to(currentRoom.name).emit('updateUsers',[...currentRoom.users])
 
     });
 
@@ -111,7 +117,13 @@ io.on('connection', (socket) => {
 
     });
 
-
+    //update chessboard
+    socket.on('move', (move) => {
+        let currentRoom = find_room_by_id(socket.room);
+        socket.to(currentRoom.name).emit('updateChessBoard',move);
+        // emit to all sockets in the room except the emitting socket.
+      });
+    
     //joining room
     socket.on('joinRoom',(roomID)=>{
         let currentRoom = find_room_by_id(roomID);
@@ -153,7 +165,7 @@ io.on('connection', (socket) => {
             users: new Set([socket.userID]), 
             messages: ["WITAJ NA CZACIE, TUTAJ BEDA WYSWIETLANE WIADOMOSCI..."], 
             open: true,
-            limit: 3
+            limit: 2
         }
         rooms.push(room);
         console.log("ROOM ADDED : ", room);
@@ -163,10 +175,13 @@ io.on('connection', (socket) => {
 
         socket.join(room.name);
         socket.room=room.roomID;
+    
         
         io.to(room.name).emit("updateRoomName",room.name);
         io.to(room.name).emit("updateUsers",[...room.users]);
         io.to(room.name).emit('updateChat',room.messages);
+        io.to(room.name).emit('orientChessBoard',"white");
+        
     });
     
 });   

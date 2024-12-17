@@ -2,7 +2,7 @@ import './App.css';
 import { useState,useEffect } from 'react';
 import {socket} from './socket';
 import axios from 'axios';
-
+import Game from "./modules/Game";
 
 function App() {
   const [isConnected, setIsConnected] = useState(socket.connected);
@@ -152,6 +152,9 @@ function App() {
               {activeUsers}
           </ol>
         </h1>
+        <div>
+          <Game/>
+        </div>
         <div>
           <form>
             <label for="message">Message here</label>
